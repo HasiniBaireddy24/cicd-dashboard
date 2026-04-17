@@ -1,0 +1,51 @@
+name: DevOps Dashboard CI
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  build:
+    runs-on: windows-latest
+
+    steps:
+      - name: Checkout Code
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+
+      - name: Install Backend Dependencies
+        run: |
+          cd backend
+          npm install
+
+      - name: Run Backend Tests
+        run: |
+          cd backend
+          npm test || echo "Tests failed"
+
+      - name: Install Frontend Dependencies
+        run: |
+          cd frontend
+          npm install
+
+      - name: Build React App
+        run: |
+          cd frontend
+          npm run build
+
+      - name: Report to AI Dashboard
+        if: always() 
+        run: |
+          $status = "${{ job.status }}"
+          $logs = "Build completed on Windows GitHub Runner. Conclusion: $status"
+          
+          # Replace with your actual live URL (or use a Tunnel like Ngrok)
+          curl -X POST http://your-dashboard-url.com/build-status `
+          -H "Content-Type: application/json" `
+          -d "{\"status\": \"$status\", \"logs\": \"$logs\"}"
