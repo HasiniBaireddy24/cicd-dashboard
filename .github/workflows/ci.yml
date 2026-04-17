@@ -17,8 +17,24 @@ jobs:
       with:
         node-version: '18'
 
-    - name: Install Dependencies
-      run: npm install
+    # Backend
+    - name: Install Backend Dependencies
+      run: |
+        cd backend
+        npm install
 
-    - name: Build App
-      run: npm run build || echo "No build step"
+    - name: Run Backend Tests
+      run: |
+        cd backend
+        npm test || echo "No tests"
+
+    # Frontend
+    - name: Install Frontend Dependencies
+      run: |
+        cd frontend
+        npm install
+
+    - name: Build Frontend
+      run: |
+        cd frontend
+        npm run build
