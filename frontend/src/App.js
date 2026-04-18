@@ -1,15 +1,18 @@
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 
+// CHANGE THIS TO YOUR ACTUAL RENDER URL
+const API_BASE_URL = "https://cicd-dashboard-1.onrender.com";
+
 function App() {
   const [builds, setBuilds] = useState([]);
 
   const fetchData = async () => {
     try {
-      const res = await axios.get("https://cicd-dashboard-1.onrender.com/builds");
+      const res = await axios.get(`${API_BASE_URL}/builds`);
       setBuilds(res.data);
     } catch (err) {
-      console.error("Error fetching builds:", err);
+      console.error("Backend unreachable. It might be sleeping on Render Free tier.");
     }
   };
 
@@ -22,37 +25,28 @@ function App() {
   const handleClearAll = async () => {
     if (window.confirm("Wipe the entire build history?")) {
       try {
-        await axios.delete("https://cicd-dashboard-b76h.onrender.com/clear-all");
+        await axios.delete(`${API_BASE_URL}/clear-all`);
         setBuilds([]);
       } catch (err) {
-        alert("Failed to clear database.");
+        alert("Failed to clear database. Check CORS or MongoDB Network Access.");
       }
     }
   };
 
-  // --- NEW: Rock-Solid Command Extraction ---
-  const copyToClipboard = (text) => {
+  const copyToClipboard = async (text) => {
     const match = text.match(/\[FIX\](.*?)\[\/FIX\]/);
-    let textToCopy = "";
+    let textToCopy = match ? match[1].trim() : text.replace(/[`]/g, '').trim();
 
-    if (match && match[1]) {
-      textToCopy = match[1].trim();
-    } else {
-      // Fallback: search for backticks if tags fail
-      const backtickMatch = text.match(/`([^`]+)`/);
-      textToCopy = backtickMatch ? backtickMatch[1] : text;
-    }
-
-    // Clean up
-    const finalCommand = textToCopy.replace(/[`]/g, '').trim();
-    navigator.clipboard.writeText(finalCommand);
-
-    // Button Visual Feedback
-    const btn = document.activeElement;
-    if (btn) {
-      const originalText = btn.innerText;
-      btn.innerText = "✅ COPIED";
-      setTimeout(() => { btn.innerText = originalText; }, 2000);
+    try {
+      await navigator.clipboard.writeText(textToCopy);
+      const btn = document.activeElement;
+      if (btn) {
+        const originalText = btn.innerText;
+        btn.innerText = "✅ COPIED";
+        setTimeout(() => { btn.innerText = originalText; }, 2000);
+      }
+    } catch (err) {
+      alert("Manual copy required or browser blocked clipboard.");
     }
   };
 
@@ -97,7 +91,7 @@ function App() {
                 </div>
                 <div style={styles.aiContent}>
                   {build.explanation
-                    .replace(/\[FIX\]|\[\/FIX\]/g, "") // Hides tags from the UI
+                    ?.replace(/\[FIX\]|\[\/FIX\]/g, "")
                     .split('\n')
                     .map((line, i) => (
                       line.trim() && <p key={i} style={styles.aiLine}>{line}</p>
